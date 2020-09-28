@@ -91,7 +91,7 @@ class Etoke(callbacks.Plugin):
         Added the caller to etokers group
         """
         nick = msg.nick
-        self.db[nick]
+        self.db[nick] = ""
         irc.reply(colorp + f'{nick} will be notified during etokes')
 
     optin = wrap(optin)
@@ -108,7 +108,7 @@ class Etoke(callbacks.Plugin):
 
     optout = wrap(optout)
 
-    @wrap(['callerInGivenChannel'])
+    @wrap(['channel'])
     def etoke(self, irc, msg, args, channel):
         """
         Starts an etoke and adds you do the tokers group. Use to @join the etoke,
@@ -118,7 +118,7 @@ class Etoke(callbacks.Plugin):
         if len(currentEtokes) == 0:
             irc.reply('No Etokes on this channel atm bro. I\'ll make one for you')
         nick = msg.nick
-        self.db[nick]
+        self.db[nick] = ""
         if nick in currentEtokes:
             irc.reply("HEY ASSHOLE YOU'RE ALREADY IN THE ETOKE")
             return
@@ -146,7 +146,6 @@ class Etoke(callbacks.Plugin):
         irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
         irc.reply("\002\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE")
         irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
-
 
 
     def join(self, irc, msg, args):
