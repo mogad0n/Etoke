@@ -45,6 +45,8 @@ import time
 
 colorp = "\00309,01"
 
+currentEtokes = []
+
 
 filename = conf.supybot.directories.data.dirize("Etoke.db")
 
@@ -52,7 +54,6 @@ class Etoke(callbacks.Plugin):
     """Pass the doob idiot"""
     threaded = True
 
-    currentEtokes = []
 
     def __init__(self, irc):
         self.__parent = super(Etoke, self)
@@ -101,6 +102,7 @@ class Etoke(callbacks.Plugin):
         Removes caller from the etokers group
         and will also reset their stats
         """
+        nick = msg.nick
         del self.db[nick]
         irc.reply(colorp + f'{nick} will no longer be notified of etoke events and their stats are reset')
 
@@ -125,21 +127,8 @@ class Etoke(callbacks.Plugin):
         tokers = " ".join(currentEtokes)
         irc.reply(colorp + f'{nick} has called for an ETOKE! {tokers} assemble! type @join to join them. Auto-Etoke will commence in 2-mins')
         time.sleep(120)
-        return ready(self, irc, msg, args)
-
-    def join(self, irc, msg, args):
-        """This command takes no arguments
-
-        Join the circle and get ready to get blazed.
-        This automatically opts you in for further notifs.
-        """
-        nick = msg.nick
-        self.db[nick]
-        currentEtokes.append(nick)
-        irc.reply(colorp + f'{nick} has joined the session type @join to partake')
-    join = wrap(join)
-
-    def ready(self, irc, msg, args):
+        tokers = " ".join(currentEtokes)
+        irc.reply(f'Get read to BLAZE! {tokers}!')
         irc.reply(colorp + "5.....")
         time.sleep(1)
         irc.reply(colorp + "4.....")
@@ -160,13 +149,17 @@ class Etoke(callbacks.Plugin):
 
 
 
+    def join(self, irc, msg, args):
+        """This command takes no arguments
 
-
-
-
-
-
-
+        Join the circle and get ready to get blazed.
+        This automatically opts you in for further notifs.
+        """
+        nick = msg.nick
+        self.db[nick]
+        currentEtokes.append(nick)
+        irc.reply(colorp + f'{nick} has joined the session type @join to partake')
+    join = wrap(join)
 
 
 
