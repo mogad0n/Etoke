@@ -38,6 +38,7 @@ except ImportError:
     # without the i18n module
     _ = lambda x: x
 
+import thread
 import random
 import pickle
 import sys
@@ -45,15 +46,15 @@ import time
 
 colorp = "\00309,01"
 
-currentEtokes = []
+tokes = 0
 
 
 filename = conf.supybot.directories.data.dirize("Etoke.db")
 
 class Etoke(callbacks.Plugin):
     """Pass the doob idiot"""
-    threaded = True
 
+    threaded = True
 
     def __init__(self, irc):
         self.__parent = super(Etoke, self)
@@ -85,13 +86,18 @@ class Etoke(callbacks.Plugin):
         world.flushers.remove(self._flushDb)
         self.__parent.die()
 
+
+    # def _addStats(self, irc, msg, args):
+
+
     def optin(self, irc, msg, args):
         """This command takes no arguments
 
         Added the caller to etokers group
         """
+        channel = msg.channel
         nick = msg.nick
-        self.db[nick] = ""
+        self.db[channel] = nick
         irc.reply(colorp + f'{nick} will be notified during etokes')
 
     optin = wrap(optin)
@@ -102,63 +108,120 @@ class Etoke(callbacks.Plugin):
         Removes caller from the etokers group
         and will also reset their stats
         """
+        channel = msg.channel
         nick = msg.nick
-        del self.db[nick]
-        irc.reply(colorp + f'{nick} will no longer be notified of etoke events and their stats are reset')
+        del self.db[channel]
+        irc.reply(colorp + f'{nick} will no longer be notified of etoke events on {channel} and their stats are reset')
 
     optout = wrap(optout)
 
-    @wrap(['channel'])
-    def etoke(self, irc, msg, args, channel):
+
+    def etoke(self, irc, msg, args):
+        """This command takes no arguments
+
+        Starts an etoke and adds you do the tokers group. Use @imin to join the etoke,
+        @optin to sign up for pings. By default everyone is opted out.
+        Use @start to start right away
         """
-        Starts an etoke and adds you do the tokers group. Use to @join the etoke,
-        @tokers to see who is in the etoke, Use @notify to intimate others about an toke in progress! @optin to sign up for pings.
-        By default everyone is opted out. Use @ready to start right away
-        """
-        if len(currentEtokes) == 0:
-            irc.reply('No Etokes on this channel atm bro. I\'ll make one for you')
         nick = msg.nick
-        self.db[nick] = ""
-        if nick in currentEtokes:
-            irc.reply("HEY ASSHOLE YOU'RE ALREADY IN THE ETOKE")
-            return
-        for nicks in self.db:
-            currentEtokes.append(nicks)
-        tokers = " ".join(currentEtokes)
-        irc.reply(colorp + f'{nick} has called for an ETOKE! {tokers} assemble! type @join to join them. Auto-Etoke will commence in 2-mins')
-        time.sleep(120)
-        tokers = " ".join(currentEtokes)
-        irc.reply(f'Get read to BLAZE! {tokers}!')
-        irc.reply(colorp + "5.....")
-        time.sleep(1)
-        irc.reply(colorp + "4.....")
-        time.sleep(1)
-        irc.reply(colorp + "3.....")
-        time.sleep(1)
-        irc.reply(colorp + "2.....")
-        time.sleep(1)
-        irc.reply(colorp + "1.....")
-        time.sleep(1)
-        a = str(random.randrange(0,16))
-        b = str(random.randrange(0,16))
-        while a == b:
-            a = str(random.randrange(0,16))
-        irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
-        irc.reply("\002\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE")
-        irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
+        channel = msg.channel
+        if channel in self.db:
+            irc.reply(colorp + f'THERES ALREADY AN ETOKE on {channel} YOU IDIOT!!!!')
+        else:
+            self.db[channel] = list([nick])
+            tokers = " ".join(nick)
+        thread.start_new_thread(etokeExpire, (chan, irc.reply))
+        irc.reply(colorp + f'{nick} has called for an ETOKE! _\\|/_ ( .__.) . o O {tokers} assemble! type @imin to join in. Auto-Etoke will commence in 2-mins. @start to commence')
+    etoke = wrap(etoke)
 
 
-    def join(self, irc, msg, args):
+    def imin(self, irc, msg, args):
         """This command takes no arguments
 
         Join the circle and get ready to get blazed.
         This automatically opts you in for further notifs.
         """
+        channel = msg.channel
         nick = msg.nick
-        self.db[nick]
-        currentEtokes.append(nick)
-        irc.reply(colorp + f'{nick} has joined the session type @join to partake')
-    join = wrap(join)
+        if channel in self.db:
+            if nick in self.db[channel]:
+                irc.reply(colorp + "HEY ASSHOLE YOU'RE ALREADY IN THE ETOKE")
+            else:
+                self.db[channel].append(nick)
+                irc.reply(colorp + nick + " has joined the etoke! Type !imin to join them!")
+        else:
+            irc.reply(colorp + "NO ETOKE ON THIS CHANNEL ATM BRO ILL MAKE ONE FOR YOU H/O")
+            return etoke(self, irc, msg, args)
+
+    def blaze(self, irc, msg, args):
+        """
+        Just spark it bro
+        """
+        nick = msg.nick
+        channel = msg.channel
+        if channel in self.db:
+            if self.db[channel][0] == nick:
+                # db_init(db)
+                # add_stats(db,etokers[chan],chan,input,irc.reply)
+                irc.reply(colorp + " ".join(self.db[channel]) + " get your lighters ready!! It's time to smoke weed in....")
+                del self.db[channel]
+                irc.reply(colorp + "5.....")
+                time.sleep(1)
+                irc.reply(colorp + "4.....")
+                time.sleep(1)
+                irc.reply(colorp + "3.....")
+                time.sleep(1)
+                irc.reply(colorp + "2.....")
+                time.sleep(1)
+                irc.reply(colorp + "1.....")
+                time.sleep(1)
+                a = str(random.randrange(0,16))
+                b = str(random.randrange(0,16))
+                while a == b:
+                    a = str(random.randrange(0,16))
+                irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
+                irc.reply("\002\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE")
+                irc.reply("\002\003" + a + "," + b + "ETOKE" + "\003" + b + "," + a + "ETOKE" + "\003" + a + "," + b + "ETOKE")
+            else:
+                irc.reply(colorp + "Stop trying to steal " + self.db[channel][0] + "'s etoke!! Use @blaze confirm if you think they've fallen asleep!")
+        else:
+            irc.reply(colorp + "NO ETOKE ON THIS CHANNEL ATM BRO")
+    blaze = wrap(blaze)
+
+    def etokeExpire(self, irc, msg, args):
+        channel = msg.channel
+        for x in range(0,15):
+            if x == 10:
+                irc.reply(colorp + "Oh no " + " ".join(self.db[channel]) + "!! There's only 1 minute left in the etoke! Bug " + self.db[channel][0] + " to start it or use @blaze to confirm!")
+            time.sleep(60)
+            if channel not in self.db:
+                return
+        del self.db[channel]
+        irc.reply(colorp + "etoke expired!! MOTHERFUCKING BASTARDS!!")
+
+
+    def top5(inp, input=None, db=None, irc.reply=None):
+        db_init(db)
+        top = db.execute("select nick,count from etokestats"
+                    " where chan = ? ORDER by count DESC limit 5",
+                    (input.chan,))
+        if top:
+            top_list = top.fetchall()
+        else:
+            return colorp + "Nobody has toked yet :("
+
+        if not top_list:
+            return colorp + "Nobody has toked yet :(("
+
+        irc.reply(colorp + "Top 5 tokers:")
+
+        i = 1
+
+        for entry in top_list:
+            irc.reply(colorp + "%i. %s - %i" % (i, entry[0], entry[1]))
+            i = i + 1
+
+
 
 
 
