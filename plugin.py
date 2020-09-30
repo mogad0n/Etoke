@@ -87,8 +87,6 @@ class Etoke(callbacks.Plugin):
         self.__parent.die()
 
 
-    # def _addStats(self, irc, msg, args):
-
 
     def optin(self, irc, msg, args):
         """This command takes no arguments
@@ -152,6 +150,7 @@ class Etoke(callbacks.Plugin):
         else:
             irc.reply(colorp + "NO ETOKE ON THIS CHANNEL ATM BRO ILL MAKE ONE FOR YOU H/O")
             return etoke(self, irc, msg, args)
+    imin = wrap(imin)
 
     def blaze(self, irc, msg, args):
         """
@@ -161,8 +160,6 @@ class Etoke(callbacks.Plugin):
         channel = msg.channel
         if channel in self.db:
             if self.db[channel][0] == nick:
-                # db_init(db)
-                # add_stats(db,etokers[chan],chan,input,irc.reply)
                 irc.reply(colorp + " ".join(self.db[channel]) + " get your lighters ready!! It's time to smoke weed in....")
                 del self.db[channel]
                 irc.reply(colorp + "5.....")
